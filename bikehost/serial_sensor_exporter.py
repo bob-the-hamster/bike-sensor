@@ -8,8 +8,8 @@ scraped by prometheus or other tools.
 """
 
 import serial
-ser = serial.Serial("/dev/ttyACM0", 9600)
+ser = serial.Serial("/dev/ttyACM0", timeout=10.0)
 while True:
-     cc=str(ser.readline())
+     cc = str(ser.readline())
      print(cc[2:][:-5])
 
