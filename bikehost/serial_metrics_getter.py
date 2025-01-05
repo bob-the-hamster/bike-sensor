@@ -3,8 +3,8 @@
 """
 This exporter runs on the same host where the Adafruit Proximity Sensor
 Trinkey is attached. It reads lines of text in Prometheus format from
-a serial device, and makes them available on an http port that can be
-scraped by prometheus or other tools.
+a serial device, and dumps them to text files where it is easy for
+prometheus node_exporter to read them.
 """
 
 import serial
@@ -18,7 +18,11 @@ class SerialSensorExporter():
     
     def __init__(self):
         self.textfile_name = "bike_sensor.txt"
-        self.dest_dir = "/tmp/node_exporter_textfiles/"
+        
+        # You would tell node_exporter to scrape this folder with:
+        # --collector.textfile.directory="/opt/node_exporter_textfiles/" 
+        self.dest_dir = "/opt/node_exporter_textfiles/"
+        
         if not os.access(self.dest_dir, os.W_OK):
             print(f"Textfile directory {repr(self.dest_dir)} is not writable. Falling back to the current directory")
             self.dest_dir = "./"
