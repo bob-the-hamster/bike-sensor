@@ -13,7 +13,9 @@ print("\nAdafruit Proximity Trinkey - Count how often anything passes the sensor
 
 class ProximityCounter():
 
-    def __init__(self):
+    def __init__(self, verbose=True):
+        self.verbose = verbose
+        
         # Set up the adps object representing the proximity sensor
         i2c = board.I2C()  # uses board.SCL and board.SDA
         self.apds = APDS9960(i2c)
@@ -45,50 +47,53 @@ class ProximityCounter():
     def update_output(self):
         delta = time.monotonic() - self.last_output
         if delta >= 1.0:
-            print(f"{time.monotonic()} Count={self.count} Prox={self.apds.proximity} State={self.detector.state} Dura={self.detector.duration}")
+            if self.verbose:
+                print(f"{time.monotonic()} Count={self.count} Prox={self.apds.proximity} Dura={self.detector.duration}")
             self.last_output = time.monotonic()
 
 class DetectionStateMachine():
     
     def __init__(self, apds):
         self.apds = apds
-        self.state = "NOTHING"
+        self.state = self.state_nothing
         self.start_time = time.monotonic()
         self.end_time = time.monotonic()
         self.duration = None
 
+    def state_something(self):
+        # Something was there, check to see if it is gone
+        if self.apds.proximity == 0:
+            self.state = self.state_nothing
+            t = time.monotonic()
+            self.duration = t - self.start_time
+            self.end_time = t
+        return 0
+        
+    def state_nothing(self):
+        # Nothing there, check to see if something has appeared
+        self.start_time = time.monotonic()
+        dist = self.apds.proximity
+        if dist == 1:
+            self.state = self.state_uncertain
+        elif dist > 1:
+            self.state = self.state_something
+            return 1
+        return 0
+        
+    def state_uncertain(self):
+        # A Weak detection should not flip state, we just wait for
+        # it to get stronger or to go away
+        dist = self.apds.proximity
+        if dist == 0:
+            self.state = self.state_nothing
+        elif dist > 1:
+            self.state = self.state_something
+            return 1
+        return 0
+
     def update(self):
         # Returns 1 if the count has gone up in this cycle
-        result = 0
-        if self.state == "SOMETHING":
-            # Something was there, check to see if it is gone
-            if self.apds.proximity == 0:
-                self.state = "NOTHING"
-                t = time.monotonic()
-                self.duration = t - self.start_time
-                self.end_time = t
-        elif self.state == "NOTHING":
-            # Nothing there, check to see if something has appeared
-            self.start_time = time.monotonic()
-            dist = self.apds.proximity
-            if dist == 1:
-                self.state = "UNCERTAIN"
-            elif dist > 1:
-                self.state = "SOMETHING"
-                result = 1
-        elif self.state == "UNCERTAIN":
-            # A Weak detection should not flip state, we just wait for
-            # it to get stronger or to go away
-            dist = self.apds.proximity
-            if dist == 0:
-                self.state = "NOTHING"
-            elif dist > 1:
-                self.state = "SOMETHING"
-                result = 1
-        else:
-            print(f"Unknown state {repr(self.state)}")
-            self.state = "NOTHING"
-        return result
+        return self.state()
 
 class BlinkHandler():
     
