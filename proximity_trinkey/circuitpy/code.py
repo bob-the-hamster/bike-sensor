@@ -42,8 +42,16 @@ class ProximityCounter():
             self.count += self.detector.update()
             self.blinker.update()
             if not self.blinker.blinking():
-                self.pixels.fill((self.apds.proximity, 0, 0))
+                self.visualize_proximity()
             self.update_output()
+    
+    def visualize_proximity(self):
+        prox = self.apds.proximity
+        if prox == 1:
+            rgb = (1, 0, 0)
+        else:
+            rgb = (0, 0, prox)
+        self.pixels.fill(rgb)
     
     def update_output(self):
         delta = time.monotonic() - self.last_output
