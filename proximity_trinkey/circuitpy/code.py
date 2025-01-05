@@ -7,49 +7,81 @@ import board
 import neopixel
 from adafruit_apds9960.apds9960 import APDS9960
 
-print("Proximity Trinkey Practice")
+print("\nAdafruit Proximity Trinkey - Count how often anything passes the sensor")
 
-i2c = board.I2C()  # uses board.SCL and board.SDA
-apds = APDS9960(i2c)
-apds.enable_proximity = True
+#### Objects
 
-pixels = neopixel.NeoPixel(board.NEOPIXEL, 2)
-
-class WanderColor():
+class ProximityCounter():
 
     def __init__(self):
-        self._color = 128
-        self._dir = 0
+        # Set up the adps object representing the proximity sensor
+        i2c = board.I2C()  # uses board.SCL and board.SDA
+        self.apds = APDS9960(i2c)
+        self.apds.enable_proximity = True
+        
+        # Set up the pixels for visual feedback that the sensor is working
+        self.pixels = neopixel.NeoPixel(board.NEOPIXEL, 2)
+        self.blinker = BlinkHandler(self.pixels)
+        self.blinker.blink_color((0, 255, 0), 1.0)
+        
+        # Set up the counter
+        self.count = 0
+        self.last_output = time.monotonic()
+        self.something_there = False
+        self.something_time = 0.0
 
-    def color(self):
-        self.wander()
-        return self._color
+    def run(self):
+        while True:
+            self.update_detection_state_machine()
+            self.blinker.update()
+            if not self.blinker.blinking():
+                self.pixels.fill((self.apds.proximity, 0, 0))
+            self.update_output()
+    
+    def update_output(self):
+        delta = time.monotonic() - self.last_output
+        if delta >= 1.0:
+            print(f"{time.monotonic()} Count = {self.count} Proximity={self.apds.proximity}")
+            self.last_output = time.monotonic()
 
-    def wander(self):
-        c = self._color
-        d = self._dir
-        d = min(max(d + random.randint(-1, 1), -5), 5)
-        c += d
-        c = min(max(c, 0), 255)
-        self._color = c
-        self._dir = d
+    def update_detection_state_machine(self):
+        if self.something_there:
+            # Something was there, check to see if it is gone
+            if self.apds.proximity == 0:
+                self.something_there = False
+        else:
+            # Nothing there, check to see if something has appeared
+            if self.apds.proximity > 0:
+                self.count += 1
+                self.something_there = True
 
-def scale_rgb(r, g, b, scale=1.0):
-    if scale > 1.0 or scale < 0.0:
-        raise Exception("scale_rgb only supports range 0.0 to 1.0")
-    return (int(r * scale), int(g * scale), int(b * scale))
+class BlinkHandler():
+    
+    def __init__(self, pixels):
+        self.pixels = pixels
+        self.off_in = 0.0
+        self.color = (128, 128, 128)
+        self.last_update = time.monotonic()
+    
+    def blinking(self):
+        return self.off_in > 0.0
+    
+    def blink_color(self, color_tuple, seconds):
+        # Start a blink now, overwrites any current blink
+        self.color = color_tuple
+        self.off_in = seconds
 
-red = WanderColor()
-green = WanderColor()
-blue = WanderColor()
+    def update(self):
+        t = time.monotonic()
+        delta = t - self.last_update
+        self.last_update = t
+        if self.off_in > 0.0:
+            self.off_in -= delta
+            if self.off_in <= 0.0:
+                self.color = (0, 0, 0)
+        self.pixels.fill(self.color)
 
-checkin = 0.0
-while True:
-    (r, g, b) = scale_rgb(red.color(), green.color(), blue.color(), 0.1)
-    pixels.fill((r, g, b))
-    delay = 0.01
-    time.sleep(delay)
-    checkin += delay
-    if checkin > 1.0:
-        checkin -= 1.0
-        print(f"Color = {r}, {g}, {b}, Proximity = {apds.proximity}")
+#### Init
+
+obj = ProximityCounter()
+obj.run()
