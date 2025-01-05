@@ -13,7 +13,8 @@ print("\nAdafruit Proximity Trinkey - Count how often anything passes the sensor
 
 class ProximityCounter():
 
-    def __init__(self, verbose=True):
+    def __init__(self, metric_name="bike_sensor_petal_count", verbose=True):
+        self.metric_name = metric_name
         self.verbose = verbose
         
         # Set up the adps object representing the proximity sensor
@@ -49,6 +50,7 @@ class ProximityCounter():
         if delta >= 1.0:
             if self.verbose:
                 print(f"{time.monotonic()} Count={self.count} Prox={self.apds.proximity} Dura={self.detector.duration}")
+            print(f"{self.metric_name} {self.count}")
             self.last_output = time.monotonic()
 
 class DetectionStateMachine():
