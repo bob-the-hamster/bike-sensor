@@ -17,6 +17,6 @@ fi
 
 # Activate the venv (just for this script) and install pip requirements
 source ./venv/bin/activate
-python3 -m pip install -U -r ./requirements.txt
+python3 -m pip install -r ./requirements.txt
 
 echo "Done, you can re-activate your venv now with: source venv/bin/activate"
