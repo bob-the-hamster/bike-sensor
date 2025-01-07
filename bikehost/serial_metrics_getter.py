@@ -17,7 +17,7 @@ import os
 class SerialSensorExporter():
     
     def __init__(self):
-        self.textfile_name = "bike_sensor.txt"
+        self.textfile_name = "bike_sensor.prom"
         
         # You would tell node_exporter to scrape this folder with:
         # --collector.textfile.directory="/opt/node_exporter_textfiles/" 
@@ -50,8 +50,8 @@ class SerialSensorExporter():
 ########################################################################
 
 def command_line_entry_point():
-    exporter = SerialSensorExporter()
-    exporter.run()
+    app = SerialSensorExporter()
+    app.run()
 
 if __name__ == "__main__":
     command_line_entry_point()

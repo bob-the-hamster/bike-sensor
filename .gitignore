@@ -1,4 +1,4 @@
 #gitignore
 bikehost/venv
-bikehost/bike_sensor.txt
+bikehost/bike_sensor.prom
 proximity_trinkey/oldstuff
