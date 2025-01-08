@@ -11,7 +11,7 @@ if [ "$IN_VENV" = "True" ] ; then
 fi
 
 # If the venv doesn't exist, create it.
-if [ ! -d "venv" ] ; then
+if [ ! -f "./venv/bin/activate" ] ; then
   python3 -m venv ./venv
 fi
 
