@@ -9,6 +9,7 @@ import os
 import re
 import time
 import argparse
+import subprocess
 
 ########################################################################
 
@@ -22,7 +23,7 @@ class KeepUpThePace():
     def __init__(self, metric_name="bike_sensor_petal_count", metrics_from=DEFAULT_METRICS_FILE, target_threshold=DEFAULT_TARGET):
         if not os.path.exists(metrics_from):
             raise Exception(f"Metrics file {metrics_from} does not exist yet")
-        self.metrics = MetricsFromFile(metric_name, metrics_from, time_window=15.0)
+        self.metrics = MetricsFromFile(metric_name, metrics_from, time_window=10.0)
         self.target = target_threshold
         self.tstate = ThresholdState()
         self.wstate = WarningState()
@@ -42,7 +43,7 @@ class KeepUpThePace():
                 self.wstate.set("warning")
             if self.tstate.check("ok"):
                 self.wstate.set("ok")
-            if self.wstate.check_over("warning", 15.0):
+            if self.tstate.check_over("slow", 20.0):
                 self.wstate.set("consequences")
             print(f"{rpm:0.2f}rpm - {self.tstate.show()} {self.wstate.show()}")
             time.sleep(1.0) 
@@ -89,6 +90,15 @@ class WarningState(BaseState):
     
     def __init__(self):
         super().__init__(["ok", "warning", "consequences"], "ok")
+    
+    def onchange(self, oldval, newval):
+        super().onchange(oldval, newval)
+        wav = f"{newval}.wav"
+        if os.path.exists(wav):
+            print(f"Playing: {wav}")
+            process = subprocess.Popen(["aplay", wav])
+        else:
+            print(f"No such file: {wav}")
 
 ########################################################################
 

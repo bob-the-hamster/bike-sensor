@@ -11,6 +11,10 @@ the Adafruit device. See also the README in that folder
 The `bikehost` folder contains python code to run on the Linux computer
 where the Adafruit devices is attached via usb cable.
 
+The `keep_up_the_pace` folder contains a script that tracks whether
+you are staying above a given rpm threshold, and plays warning sounds
+if you fall below for too long.
+
 To collect the metrics into prometheus, you can use node-exporter.
 To graph the metrics from the sensor in prometheus, or a compatable
 tool like Grafana, use the query:
